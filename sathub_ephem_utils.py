@@ -4,10 +4,11 @@
 # which provides information on the expected positions of satellites
 # in Earth orbit.
 
-# Developer: R.A. Street
 # Credit: This code is based on the demonstration notebook at
 # https://github.com/iausathub/ephemeris_api_demo/blob/main/demo.ipynb
 # by Anthony Rihani and Seigfried Eggl.
+# Developer: R.A. Street
+
 import requests
 from os import path
 
@@ -21,6 +22,8 @@ def query(params):
                     longitude: float Longitude of observer in decimal degrees
                     elevation: float Height of observer above mean sealevel in m
                     JD: float        Time of observation
+    Returns:
+    results json    Dictionary of returned results
     """
 
     ROOT_URL = 'http://apexgroup.web.illinois.edu/ephemeris/'
