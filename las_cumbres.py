@@ -4,6 +4,7 @@
 
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units as u
+import json
 
 # Developer: R.A. Street
 class Telescope():
@@ -81,6 +82,12 @@ class LasCumbresNetwork():
             tel.get_instrument_type()
             self.telescopes[tel_code] = tel
 
+    def get_tel(self, tel_code):
+        if tel_code in list(self.telescopes.keys()):
+            return self.telescopes[tel_code]
+        else:
+            raise IOError('Error: '+tel_code
+                    +' is not a recognized facility in the Las Cumbres Network')
 
 class LasCumbresObservation():
 
@@ -278,3 +285,16 @@ def lco_api(self,request,credentials):
     response = requests.post(url, headers=headers, json=ur).json()
 
     return response
+
+def load_lco_info(file_path):
+    """Function to load a user's LCO API token and proposal ID code from a
+    local file.  The contents of the file are expected to be JSON, of the form:
+    {"submitter": <lco user ID>,
+     "proposal_id": <proposal code>,
+     "lco_token": <LCO token}
+    """
+
+    with open(file_path,'r') as f:
+        credentials = json.load(f)
+
+    return credentials

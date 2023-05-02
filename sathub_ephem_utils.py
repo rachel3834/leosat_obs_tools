@@ -44,4 +44,8 @@ def query(params):
     else:
         raiseIOError('Incorrect parameter set provided for query')
 
-    return requests.get(query).json()
+    results = requests.get(query)
+    if results.status_code == 200:
+        results = results.json()
+
+    return results
