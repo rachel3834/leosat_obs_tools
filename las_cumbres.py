@@ -66,7 +66,7 @@ class LasCumbresNetwork():
             'cpt-domc-1m0a': [Angle('32d22m50.38sS'), Angle('20d48m36.39sE'), 1807.0*u.m, 'fa06'],
             'coj-doma-1m0a': [Angle('31d16m22.56sS'), Angle('149d4m14.33sE'), 1168.0*u.m, 'fa12'],
             'coj-domb-1m0a': [Angle('31d16m22.89sS'), Angle('149d4m14.75sE'), 1168.0*u.m, 'fa19'],
-            'tfn-doma-1m0a': [Anglre('28d18m1.56sN'), Angle('16d30m41.82sE'), 2406.0*u.m, 'fa20'],
+            'tfn-doma-1m0a': [Angle('28d18m1.56sN'), Angle('16d30m41.82sE'), 2406.0*u.m, 'fa20'],
             'tfn-domb-1m0a': [Angle('28d18m1.8720sN'), Angle('16d30m41.4360sE'), 2406.0*u.m, 'fa11']
             }
 
@@ -84,15 +84,18 @@ class LasCumbresNetwork():
 
 class LasCumbresObservation():
 
-    def __init__(self, params=None):
+    def __init__(self, params=None, facilities=None):
+        self.group_id = None
+
         # Credentials
+        self.submitter = None
         self.proposal_id = None
 
         # Facility
         self.facility = None
 
         # Target
-        self.name = None
+        self.target_name = None
         self.target_type = 'ICRS'
         self.ra = None
         self.dec = None
@@ -102,9 +105,9 @@ class LasCumbresObservation():
         self.epoch = 2000
 
         # Observation parameters
-        self.exposure_sec = None
-        self.nexposures = None
-        self.filter = None
+        self.exposure_times = []
+        self.exposure_counts = []
+        self.filters = []
         self.ipp = None
         self.obs_type = 'NORMAL'
 
@@ -117,10 +120,22 @@ class LasCumbresObservation():
         self.tstart = None
         self.tend = None
 
+        # Assign parameters, if provided
         if params:
             for key, value in params.items():
                 if hasattr(self, key):
-                    setattr(self, key, value)
+                    if key in ['exposure_times', 'exposure_counts', 'filters']:
+                        data = getattr(self, key)
+                        for entry in value:
+                            data.append(entry)
+                        setattr(self, key, data)
+                    else:
+                        setattr(self, key, value)
+
+        # Assign facility, if parameters given:
+        if facilities and params:
+            if params['tel_code'] in facilities.telescopes.keys():
+                self.facility = facilities.telescopes[params['tel_code']]
 
     def build_target_dict(self):
         # Check target coordinates are in decimal degrees:
@@ -130,7 +145,7 @@ class LasCumbresObservation():
             s = SkyCoord(self.ra, self.dec, frame='icrs', unit=(u.hourangle, u.deg))
 
         target =   {
-                    'name': str(self.name),
+                    'name': str(self.target_name),
                     'type': self.target_type,
                     'ra': s.ra.deg,
                     'dec': s.dec.deg,
@@ -151,7 +166,7 @@ class LasCumbresObservation():
 
         return constraints
 
-    def build_instrument_configs(self):
+    def build_instrument_configs(self, target, constraints):
         """Function to compose the instrument configuration dictionary for a
         set of exposures"""
 
@@ -172,17 +187,17 @@ class LasCumbresObservation():
                     'instrument_type': self.facility.instrument_type,
                     'instrument_configs': [
                         {
-                            'exposure_count': int(self.exposure_counts),
-                            'exposure_time': float(self.exposure_times),
+                            'exposure_count': int(self.exposure_counts[i]),
+                            'exposure_time': float(self.exposure_times[i]),
                             'mode': 'full_frame',
                             'rotator_mode': '',
-                            'extra_params': {
-                                'offset_ra': 0,
-                                'offset_dec': 0,
-                                'defocus': 0
+                            "extra_params": {
+                                "defocus": 0.0,
+                                "bin_x": 1,
+                                "bin_y": 1
                             },
                             'optical_elements': {
-                                'filter': parse_filter(self.filter)
+                                'filter': parse_filter(self.filters[i])
                             }
                         }
                     ],
@@ -192,11 +207,12 @@ class LasCumbresObservation():
                     },
                     'guiding_config': {
                         'mode': 'ON',
-                        'optional': true,
+                        'optional': 'true',
                         'extra_params': {}
                     },
                     'target': target,
-                    'constraints': constraints
+                    'constraints': constraints,
+                    'extra_params': {}
                 }
             config_list.append(config)
 
@@ -204,57 +220,61 @@ class LasCumbresObservation():
 
     def build_obs_request(self):
 
-        if self.group_id == None:
-            self.get_group_id()
-
         request_group = {
-                         'name': self.group_id,
-                         'proposal': self.proposal_id,
-                         'ipp_value': float(self.ipp),
-                         'operator': 'SINGLE',
-                         'observation_type': self.obs_type
+                        "id": self.group_id,
+                        "submitter": self.submitter,
+                        "name": self.group_id,
+                        "observation_type": self.obs_type,
+                        "operator": "SINGLE",
+                        "ipp_value": float(self.ipp),
+                        "state": "PENDING",
+                        "proposal": self.proposal_id,
                          }
 
         target = self.build_target_dict()
         location = self.facility.build_location_dict()
         constraints = self.build_constraints_dict()
-        inst_config_list = self.build_instrument_configs()
-        windows = {'start': self.tstart.strftime("%Y-%m-%dT%H:%M:%S"),
-                   'end': self.tend.strftime("%Y-%m-%dT%H:%M:%S")}
+        inst_config_list = self.build_instrument_configs(target, constraints)
+        windows = {'start': self.tstart.strftime("%Y-%m-%d %H:%M:%S"),
+                   'end': self.tend.strftime("%Y-%m-%d %H:%M:%S")}
 
         request_group['requests'] = [{
-                                    'acceptability_threshold': 90,
-                                    'configuration_repeats': 1,
-                                    'optimization_type': 'TIME',
-                                    'configurations': inst_config_list,
-                                    'windows': windows,
-                                    'location': location
+                                       "id": self.group_id,
+                                        "location": location,
+                                        "configurations": inst_config_list,
+                                        "windows": [windows],
+                                        "observation_note": "",
+                                        "state": "PENDING",
+                                        "acceptability_threshold": 90,
+                                        "configuration_repeats": 1,
+                                        "optimization_type": "TIME",
+                                        "extra_params": {}
                                     }]
 
         self.request = request_group
 
 def lco_api(self,request,credentials):
-        """Function to communicate with various APIs of the LCO network.
-        ur should be a user request in the form of a Python dictionary,
-        while end_point is the URL string which
-        should be concatenated to the observe portal path to complete the URL.
-        Accepted end_points are:
-            "userrequests"
-        Accepted methods are:
-            POST
-        """
-        PORTAL_URL = 'https://observe.lco.global/api'
+    """Function to communicate with various APIs of the LCO network.
+    ur should be a user request in the form of a Python dictionary,
+    while end_point is the URL string which
+    should be concatenated to the observe portal path to complete the URL.
+    Accepted end_points are:
+        "userrequests"
+    Accepted methods are:
+        POST
+    """
+    PORTAL_URL = 'https://observe.lco.global/api'
 
-        jur = json.dumps(request)
+    jur = json.dumps(request)
 
-        headers = {'Authorization': 'Token ' + credentials['token']}
+    headers = {'Authorization': 'Token ' + credentials['token']}
 
-        if end_point[0:1] == '/':
-            end_point = end_point[1:]
-        if end_point[-1:] != '/':
-            end_point = end_point+'/'
-        url = path.join(PORTAL_URL,end_point)
+    if end_point[0:1] == '/':
+        end_point = end_point[1:]
+    if end_point[-1:] != '/':
+        end_point = end_point+'/'
+    url = path.join(PORTAL_URL,end_point)
 
-        response = requests.post(url, headers=headers, json=ur).json()
-        
-        return response
+    response = requests.post(url, headers=headers, json=ur).json()
+
+    return response
