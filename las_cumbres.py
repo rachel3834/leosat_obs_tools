@@ -34,6 +34,8 @@ class Telescope():
             self.instrument_type = '2M0-SCICAM-MUSCAT'
         elif 'fs' in self.imager:
             self.instrument_type = '2M0-SCICAM-SPECTRAL'
+        elif 'kb' in self.imager:
+            self.instrument_type = '0M4-SCICAM-SBIG'
         else:
             raise IOError('Unrecognized instrument type, '+str(self.imager))
 
@@ -56,19 +58,29 @@ class LasCumbresNetwork():
         #tel_code : site_code: latitude, longitude, elevation
         facilities = {
             'ogg-clma-2m0a': [Angle('20d42m25.5sN'), Angle('156d15m27.4sW'), 3055.0*u.m, 'mc03'],
+            'ogg-clma-0m4b': [Angle('20d42m25.1sN'), Angle('156d15m27.11sW'), 3037.0*u.m, 'kb27'],
+            #'ogg-clma-0m4c': [Angle('20d42m25.1sN'), Angle('156d15m27.12sW'), 3037.0*u.m, ''],
             'coj-clma-2m0a': [Angle('31d16m23.4sS'), Angle('149d4m13.0sE'), 1111.8*u.m, 'fs01'],
+            'coj-doma-1m0a': [Angle('31d16m22.56sS'), Angle('149d4m14.33sE'), 1168.0*u.m, 'fa12'],
+            'coj-domb-1m0a': [Angle('31d16m22.89sS'), Angle('149d4m14.75sE'), 1168.0*u.m, 'fa19'],
+            'coj-clma-0m4a': [Angle('31d16m22.38sS'), Angle('149d4m15.05sE'), 1191.0*u.m, 'kb26'],
+            'coj-clma-0m4b': [Angle('31d16m22.48sS'), Angle('149d4m14.91sE'), 1191.0*u.m, 'kb83'],
             'elp-doma-1m0a': [Angle('30d40m47.53sN'), Angle('104d0m54.63sW'), 2010.0*u.m, 'fa05'],
             'elp-domb-1m0a': [Angle('30d40m48.00sN'), Angle('104d0m55.74sW'), 2029.4*u.m, 'fa07'],
+            #'elp-aqwa-0m4a': [Angle('30d40,48.15sN'), Angle('104d0m54.24sW'), 2027.0*u.m, ''],
             'lsc-doma-1m0a': [Angle('30d10m2.58sS'), Angle('70d48m17.24sW'), 2201.0*u.m, 'fa15'],
             'lsc-domb-1m0a': [Angle('30d10m2.39sS'), Angle('70d48m16.78sW'), 2201.0*u.m, 'fa04'],
             'lsc-domc-1m0a': [Angle('30d10m2.81sS'), Angle('70d48m16.85sW'), 2201.0*u.m, 'fa03'],
+            'lsc-aqwa-0m4a': [Angle('30d10m3.79sS'), Angle('70d48m16.88sW'), 2202.5*u.m, 'kb98'],
+            'lsc-aqwb-0m4a': [Angle('30d10m3.56sS'), Angle('70d48m16.74sW'), 2202.5*u.m, 'kb85'],
             'cpt-doma-1m0a': [Angle('32d22m50.0sS'), Angle('20d48m36.65sE'), 1807.0*u.m, 'fa14'],
             'cpt-domb-1m0a': [Angle('32d22m50.0sS'), Angle('20d48m36.13sE'), 1807.0*u.m, 'fa01'],
             'cpt-domc-1m0a': [Angle('32d22m50.38sS'), Angle('20d48m36.39sE'), 1807.0*u.m, 'fa06'],
-            'coj-doma-1m0a': [Angle('31d16m22.56sS'), Angle('149d4m14.33sE'), 1168.0*u.m, 'fa12'],
-            'coj-domb-1m0a': [Angle('31d16m22.89sS'), Angle('149d4m14.75sE'), 1168.0*u.m, 'fa19'],
+            #'cpt-aqwa-0m4a': [Angle('32d22m50.25sS'), Angle('20d48m35.54sE'), 1804.0*u.m, ''],
             'tfn-doma-1m0a': [Angle('28d18m1.56sN'), Angle('16d30m41.82sE'), 2406.0*u.m, 'fa20'],
-            'tfn-domb-1m0a': [Angle('28d18m1.8720sN'), Angle('16d30m41.4360sE'), 2406.0*u.m, 'fa11']
+            'tfn-domb-1m0a': [Angle('28d18m1.8720sN'), Angle('16d30m41.4360sE'), 2406.0*u.m, 'fa11'],
+            #'tfn-aqwa-0m4a': [Angle('28d18m1.11sN'), Angle('16d30m42.13sE'), 2390.0*u.m, 'kb95'],
+            'tfn-aqwa-0m4a': [Angle('28d18m1.11sN'), Angle('16d30m42.21sE'), 2390.0*u.m, 'kb24'],
             }
 
         self.telescopes = {}
