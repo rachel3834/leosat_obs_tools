@@ -4,7 +4,14 @@
 
 from astropy.coordinates import Angle, SkyCoord
 from astropy import units as u
+from astropy.time import Time, TimeDelta
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astropy.coordinates import get_sun
+from astropy.coordinates import get_moon
 import json
+from os import path
+import requests
+import numpy as np
 
 # Developer: R.A. Street
 class Telescope():
@@ -38,6 +45,56 @@ class Telescope():
             self.instrument_type = '0M4-SCICAM-SBIG'
         else:
             raise IOError('Unrecognized instrument type, '+str(self.imager))
+
+    def get_EarthLocation(self):
+        self.earthlocation = EarthLocation(lat=self.latitude,
+                                           lon=self.longitude,
+                                           height=self.elevation)
+
+    def check_visibility(self, target, time_observe,
+                         min_alt=30.0*u.deg, time_format='JD'):
+        """Method to check whether the given target is visible from this
+        facility on the datetime given.
+
+        Inputs:
+            target dict {RA: float, Dec: float} Units of decimal degrees
+            time_observe  float  if time_format=JD (default)
+                          str    YYYY-MM-DDTHH:MM:SS
+
+        Output:
+            boolean
+        """
+
+        # Convert the pointing coordinates to a SkyCoord
+        field = SkyCoord(target['RA'], target['Dec'], unit=(u.deg, u.deg))
+
+        # Convert the time to observe to a Time object
+        if time_format == 'JD':
+            tobs = Time(time_observe, format='jd')
+        else:
+            tobs = Time(time_observe, format='isot', scale='utc')
+
+        # Calculate the altitude of the target from this observatory, and
+        # check whether the target rises above the minimum for observation
+        frame = AltAz(obstime=tobs, location=self.earthlocation)
+        altaz = field.transform_to(frame)
+        altitude = altaz.alt
+        if (altitude <= min_alt):
+            return False, 'Target altitude too low'
+
+        else:
+            # Calculate the altitude of the Sun for the same time(s), and
+            # check whether the Sun is lower than 12deg, meaning that the site
+            # is in nighttime.
+            sun_altaz = get_sun(tobs).transform_to(frame)
+            sun_altitude = sun_altaz.alt
+            if (sun_altitude >= 12.0*u.deg):
+                return False, 'Target visible in daytime'
+
+            # If both conditions are true, the target is visible
+            else:
+                return True, 'OK'
+
 
 class LasCumbresNetwork():
     """Configure data on LCO Facilities.  Currently supports only imaging
@@ -92,6 +149,7 @@ class LasCumbresNetwork():
             tel.elevation = tel_data[2]
             tel.imager = tel_data[3]
             tel.get_instrument_type()
+            tel.get_EarthLocation()
             self.telescopes[tel_code] = tel
 
     def get_tel(self, tel_code):
@@ -172,6 +230,7 @@ class LasCumbresObservation():
                     'proper_motion_dec': 0,
                     'parallax': 0,
                     'epoch': 2000,
+                    'extra_params': {}
                     }
 
         return target
@@ -191,8 +250,8 @@ class LasCumbresObservation():
 
         def parse_filter(f):
             filters = { 'SDSS-g': 'gp', 'SDSS-r': 'rp', 'SDSS-i': 'ip',
-                       'Bessell-B': 'B', 'Bessell-V': 'V', 'Bessell-R': 'R',
-                       'Cousins-Ic': 'I', 'Pan-STARRS-Z': 'zs'
+                       'Bessell-B': 'b', 'Bessell-V': 'v', 'Bessell-R': 'r',
+                       'Cousins-Ic': 'i', 'Pan-STARRS-Z': 'zs'
                        }
             if f in filters.keys():
                 return filters[f]
@@ -208,12 +267,12 @@ class LasCumbresObservation():
                         {
                             'exposure_count': int(self.exposure_counts[i]),
                             'exposure_time': float(self.exposure_times[i]),
-                            'mode': 'full_frame',
+                            'mode': 'default',
                             'rotator_mode': '',
                             "extra_params": {
-                                "defocus": 0.0,
-                                "bin_x": 1,
-                                "bin_y": 1
+                                "defocus": 0,
+                                "offset_ra": 0,
+                                "offset_dec": 0
                             },
                             'optical_elements': {
                                 'filter': parse_filter(self.filters[i])
@@ -231,7 +290,6 @@ class LasCumbresObservation():
                     },
                     'target': target,
                     'constraints': constraints,
-                    'extra_params': {}
                 }
             config_list.append(config)
 
@@ -240,13 +298,11 @@ class LasCumbresObservation():
     def build_obs_request(self):
 
         request_group = {
-                        "id": self.group_id,
                         "submitter": self.submitter,
                         "name": self.group_id,
                         "observation_type": self.obs_type,
                         "operator": "SINGLE",
                         "ipp_value": float(self.ipp),
-                        "state": "PENDING",
                         "proposal": self.proposal_id,
                          }
 
@@ -258,35 +314,34 @@ class LasCumbresObservation():
                    'end': self.tend.strftime("%Y-%m-%d %H:%M:%S")}
 
         request_group['requests'] = [{
-                                       "id": self.group_id,
                                         "location": location,
                                         "configurations": inst_config_list,
                                         "windows": [windows],
                                         "observation_note": "",
-                                        "state": "PENDING",
                                         "acceptability_threshold": 90,
                                         "configuration_repeats": 1,
                                         "optimization_type": "TIME",
-                                        "extra_params": {}
                                     }]
 
         self.request = request_group
 
-def lco_api(self,request,credentials):
+def lco_api(request_group, credentials, end_point):
     """Function to communicate with various APIs of the LCO network.
     ur should be a user request in the form of a Python dictionary,
     while end_point is the URL string which
     should be concatenated to the observe portal path to complete the URL.
     Accepted end_points are:
-        "userrequests"
+        "requestgroups"
     Accepted methods are:
         POST
     """
     PORTAL_URL = 'https://observe.lco.global/api'
 
-    jur = json.dumps(request)
+    jur = json.dumps(request_group)
 
-    headers = {'Authorization': 'Token ' + credentials['token']}
+    print('\n',jur,'\n')
+
+    headers = {'Authorization': 'Token ' + credentials['lco_token']}
 
     if end_point[0:1] == '/':
         end_point = end_point[1:]
@@ -294,7 +349,7 @@ def lco_api(self,request,credentials):
         end_point = end_point+'/'
     url = path.join(PORTAL_URL,end_point)
 
-    response = requests.post(url, headers=headers, json=ur).json()
+    response = requests.post(url, headers=headers, json=request_group).json()
 
     return response
 

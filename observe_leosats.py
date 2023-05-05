@@ -34,49 +34,64 @@ def run():
               'jdstep': args.jdstep}
     results = sathub_ephem_utils.query(params)
 
-    # Compose observation requests for each entry, using a default strategy:
-    nexp = 5
-    overhead = 28.0
-    expt = 1.0
-    bandpass = 'Bessell-R'
-    duration = (nexp*(expt + overhead))/(60.0*60.0*24.0)
-    dt = duration / 2.0
+    # Check for visibility
+    visible_results = []
     for entry in results:
-        ts_obs = Time(entry['JULIAN_DATE'], format='jd', scale='utc')
-        obs_start = ts_obs - dt
-        obs_stop = ts_obs + dt
-        obs_params = {
-                      "group_id": args.sat_code+'_'+args.date_start,
-                      "submitter": lco_info['submitter'],
-                      "proposal_id": lco_info['proposal_id'],
-                      "observation_type": "NORMAL",  # NEEDS TO CHANGE
-                      "target_name": args.sat_code,
-                      "target_type": "ICRS",
-                      "ra": entry['RIGHT_ASCENSION-DEG'],
-                      "dec": entry['DECLINATION-DEG'],
-                      "max_airmass": 1.6,
-                      "min_lunar_distance": 10.0,
-                      "max_lunar_phase": 1.0,
-                      "tel_code": args.tel_code,
-                      "exposure_counts": [nexp],
-                      "exposure_times": [expt],
-                      "filters": [bandpass],
-                      "ipp": 1.05,
-                      "tstart": obs_start.datetime,
-                      "tend": obs_stop.datetime
-                      }
+        target = {'RA': entry['RIGHT_ASCENSION-DEG'],
+                  'Dec': entry['DECLINATION-DEG']}
+        (visible, status) = tel.check_visibility(target, entry['JULIAN_DATE'])
+        if visible:
+            visible_results.append(entry)
 
-        obs = las_cumbres.LasCumbresObservation(obs_params, lco_network)
-        obs.build_obs_request()
-        print('Observing request details: ')
-        print(obs.request)
-        
-        if args.submit == 'submit':
-            response = las_cumbres.lco_api(obs.request, lco_info)
-            print('Submitted observation to LCO Network with response: ')
-            print(response)
-        else:
-            print('Status is '+args.submit+' so no observations submitted')
+    print('Observing opportunities from '+args.tel_code+':')
+    sathub_ephem_utils.summarize_results(visible_results)
+
+    # Compose observation requests for each entry, using a default strategy:
+    if args.submit == 'submit':
+        nexp = 4
+        overhead_per_exp = 28.0
+        initial_overhead = 120.0
+        expt = 1.0
+        bandpass = 'Bessell-V'
+        duration = (initial_overhead + nexp*(expt + overhead_per_exp))/(60.0*60.0*24.0)
+        dt = duration / 2.0
+        for entry in results:
+            ts_obs = Time(entry['JULIAN_DATE'], format='jd', scale='utc')
+            obs_start = ts_obs - dt
+            obs_stop = ts_obs + dt
+            obs_params = {
+                          "group_id": args.sat_code.replace(' ','')+'_'+args.date_start,
+                          "submitter": lco_info['submitter'],
+                          "proposal_id": lco_info['proposal_id'],
+                          "obs_type": "TIME_CRITICAL",
+                          "target_name": args.sat_code,
+                          "target_type": "ICRS",
+                          "ra": entry['RIGHT_ASCENSION-DEG'],
+                          "dec": entry['DECLINATION-DEG'],
+                          "max_airmass": 2.0,
+                          "min_lunar_distance": 10.0,
+                          "max_lunar_phase": 1.0,
+                          "tel_code": args.tel_code,
+                          "exposure_counts": [nexp],
+                          "exposure_times": [expt],
+                          "filters": [bandpass],
+                          "ipp": 1.05,
+                          "tstart": obs_start.datetime,
+                          "tend": obs_stop.datetime
+                          }
+
+            obs = las_cumbres.LasCumbresObservation(obs_params, lco_network)
+            obs.build_obs_request()
+            print('Observing request details: ')
+            print(obs.request)
+
+            if args.submit == 'submit':
+                print(lco_info)
+                response = las_cumbres.lco_api(obs.request, lco_info, 'requestgroups')
+                print('Submitted observation to LCO Network with response: ')
+                print(response)
+            else:
+                print('Status is '+args.submit+' so no observations submitted')
 
 def get_args():
     parser = argparse.ArgumentParser()

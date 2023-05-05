@@ -1,5 +1,8 @@
 import pytest
 from datetime import datetime
+from astropy import units as u
+from astropy.time import Time
+import numpy as np
 
 @pytest.mark.parametrize(
     "test, expected",
@@ -25,17 +28,14 @@ from datetime import datetime
           "tend": datetime.strptime("2017-03-22 14:26:08","%Y-%m-%d %H:%M:%S")
           },
           {
-            "id": "TEST1",
             "submitter": "rstreet",
             "name": "TEST1",
             "observation_type": "NORMAL",
             "operator": "SINGLE",
             "ipp_value": 1.05,
-            "state": "PENDING",
             "proposal": "LCO2023A-001",
             "requests": [
-                        {"id": "TEST1",
-                        "location": {
+                        {"location": {
                                      'telescope_class': '2m0',
                                      'site': 'ogg',
                                      'enclosure': 'clma'
@@ -46,15 +46,15 @@ from datetime import datetime
                                         "instrument_configs": [{
                                                                 "exposure_time": 30.0,
                                                                 "exposure_count": 1,
-                                                                "mode": "full_frame",
+                                                                "mode": "default",
                                                                 "rotator_mode": "",
                                                                 "optical_elements": {
-                                                                    "filter": "R"
+                                                                    "filter": "v"
                                                                 },
                                                                 "extra_params": {
-                                                                    "defocus": 0.0,
-                                                                    "bin_x": 1,
-                                                                    "bin_y": 1
+                                                                    "defocus": 0,
+                                                                    "offset_ra": 0,
+                                                                    "offset_dec": 0
                                                                 }
                                                             }],
                                         "acquisition_config": {
@@ -79,9 +79,9 @@ from datetime import datetime
                                                     "proper_motion_ra": 0,
                                                     "proper_motion_dec": 0,
                                                     "parallax": 0,
-                                                    "epoch": 2000
+                                                    "epoch": 2000,
+                                                    "extra_params": {}
                                                 },
-                                        "extra_params" : {}
                                     }],
                         "windows": [{
                                     "start": "2017-03-22 14:26:08",
@@ -108,3 +108,35 @@ def test_build_obs_request(test, expected):
 
     for key, value in expected.items():
         assert(obs.request[key] == expected[key])
+
+@pytest.mark.parametrize(
+    "test, expected",
+        [
+            (
+                {'tel_code': 'lsc-doma-1m0a',
+                 'RA': 262.5*u.deg,
+                 'Dec': -29.0*u.deg,
+                 'time_observe': '2023-07-15T04:00:00'},
+                 True
+            ),
+            (
+                {'tel_code': 'ogg-clma-2m0a',
+                 'RA': 262.5*u.deg,
+                 'Dec': -29.0*u.deg,
+                 'time_observe': '2023-07-15T18:00:00'},
+                 False
+            )
+        ]
+    )
+def test_visibility(test, expected):
+
+    from leosat_obs_tools.las_cumbres import LasCumbresNetwork
+
+    facilities = LasCumbresNetwork()
+
+    tel = facilities.get_tel(test['tel_code'])
+    target = {'RA': test['RA'], 'Dec': test['Dec']}
+    time_observe = Time(test['time_observe'], format='isot', scale='utc')
+    (visible, status) = tel.check_visibility(target, time_observe.jd)
+
+    assert(visible == expected)

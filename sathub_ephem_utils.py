@@ -11,6 +11,7 @@
 
 import requests
 from os import path
+from astropy.time import Time
 
 def query(params):
     """Function to compose and send a query to SatHub's Ephemeris service
@@ -49,3 +50,16 @@ def query(params):
         results = results.json()
 
     return results
+
+def summarize_results(query_results):
+    """Function to output a concise and user-friendly summary of observing
+    opportunities"""
+
+    if len(query_results) == 0:
+        print('No observing windows within parameters given')
+    else:
+        for result in query_results:
+            ts = Time(result['JULIAN_DATE'], format='jd')
+            print(result['NAME']+' '+ts.isot+' RA='
+                    +str(result['RIGHT_ASCENSION-DEG'])+' Dec='
+                    +str(result['DECLINATION-DEG']))
