@@ -26,8 +26,9 @@ class Telescope():
 
     def build_location_dict(self):
 
+        tel_class = str(self.tel).replace('a','').replace('b','').replace('c','')
         location = {
-                    'telescope_class' : str(self.tel).replace('a',''),
+                    'telescope_class' : tel_class,
                     'site':             str(self.site),
                     'enclosure':      str(self.enclosure)
                     }
@@ -84,14 +85,18 @@ class Telescope():
 
         else:
             # Calculate the altitude of the Sun for the same time(s), and
-            # check whether the Sun is lower than 12deg, meaning that the site
-            # is in nighttime.
+            # check whether the Sun is lower than -12deg but above -18, meaning that the site
+            # is in twilight.
             sun_altaz = get_sun(tobs).transform_to(frame)
             sun_altitude = sun_altaz.alt
-            if (sun_altitude >= 12.0*u.deg):
+            if (sun_altitude >= -12.0*u.deg):
                 return False, 'Target visible in daytime'
 
-            # If both conditions are true, the target is visible
+            elif (sun_altitude <= -18.0*u.deg):
+                return False, 'Target not illuminated at night'
+                
+            # If the site is in twilight and the target is above the horizon,
+            # it is likely to be visible
             else:
                 return True, 'OK'
 

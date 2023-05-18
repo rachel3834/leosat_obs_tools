@@ -9,11 +9,20 @@ import argparse
 import sathub_ephem_utils
 import las_cumbres
 from astropy.time import Time
+import csv
 
 def run():
     # Gather user input
     args = get_args()
 
+    if args.sat_code == 'ALL':
+        satcat = load_satcat()
+    elif 'search_term=' in args.sat_code:
+        search_term = args.sat_code.split('=')[-1]
+        satcat = load_satcat(search_term)
+    print(satcat)
+    exit()
+    
     # Load information on LCO network facilities, and extract from it
     # the geographic location of the requested telescope
     lco_network = las_cumbres.LasCumbresNetwork()
@@ -51,52 +60,52 @@ def run():
         nexp = 4
         overhead_per_exp = 28.0
         initial_overhead = 120.0
-        expt = 1.0
+        expt = 5.0
         bandpass = 'Bessell-V'
         duration = (initial_overhead + nexp*(expt + overhead_per_exp))/(60.0*60.0*24.0)
         dt = duration / 2.0
-        for entry in results:
-            ts_obs = Time(entry['JULIAN_DATE'], format='jd', scale='utc')
-            obs_start = ts_obs - dt
-            obs_stop = ts_obs + dt
-            obs_params = {
-                          "group_id": args.sat_code.replace(' ','')+'_'+args.date_start,
-                          "submitter": lco_info['submitter'],
-                          "proposal_id": lco_info['proposal_id'],
-                          "obs_type": "TIME_CRITICAL",
-                          "target_name": args.sat_code,
-                          "target_type": "ICRS",
-                          "ra": entry['RIGHT_ASCENSION-DEG'],
-                          "dec": entry['DECLINATION-DEG'],
-                          "max_airmass": 2.0,
-                          "min_lunar_distance": 10.0,
-                          "max_lunar_phase": 1.0,
-                          "tel_code": args.tel_code,
-                          "exposure_counts": [nexp],
-                          "exposure_times": [expt],
-                          "filters": [bandpass],
-                          "ipp": 1.05,
-                          "tstart": obs_start.datetime,
-                          "tend": obs_stop.datetime
-                          }
 
-            obs = las_cumbres.LasCumbresObservation(obs_params, lco_network)
-            obs.build_obs_request()
-            print('Observing request details: ')
-            print(obs.request)
+        # Take only the first entry, to avoid oversubmitting:
+        ts_obs = Time(visible_results[0]['JULIAN_DATE'], format='jd', scale='utc')
+        obs_start = ts_obs - dt
+        obs_stop = ts_obs + dt
+        obs_params = {
+                      "group_id": args.sat_code.replace(' ','')+'_'+args.date_start,
+                      "submitter": lco_info['submitter'],
+                      "proposal_id": lco_info['proposal_id'],
+                      "obs_type": "TIME_CRITICAL",
+                      "target_name": args.sat_code,
+                      "target_type": "ICRS",
+                      "ra": visible_results[0]['RIGHT_ASCENSION-DEG'],
+                      "dec": visible_results[0]['DECLINATION-DEG'],
+                      "max_airmass": 2.0,
+                      "min_lunar_distance": 10.0,
+                      "max_lunar_phase": 1.0,
+                      "tel_code": args.tel_code,
+                      "exposure_counts": [nexp],
+                      "exposure_times": [expt],
+                      "filters": [bandpass],
+                      "ipp": 1.05,
+                      "tstart": obs_start.datetime,
+                      "tend": obs_stop.datetime
+                      }
 
-            if args.submit == 'submit':
-                print(lco_info)
-                response = las_cumbres.lco_api(obs.request, lco_info, 'requestgroups')
-                print('Submitted observation to LCO Network with response: ')
-                print(response)
-            else:
-                print('Status is '+args.submit+' so no observations submitted')
+        obs = las_cumbres.LasCumbresObservation(obs_params, lco_network)
+        obs.build_obs_request()
+        print('Observing request details: ')
+        print(obs.request)
+
+        if args.submit == 'submit':
+            response = las_cumbres.lco_api(obs.request, lco_info, 'requestgroups')
+            print('Submitted observation to LCO Network with response: ')
+            print(response)
+        else:
+            print('Status is '+args.submit+' so no observations submitted')
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('sat_code', type=str,
-                    help='sat_code: Name of the satellite in the Celestrak database')
+                    help='sat_code: Name of the satellite in the Celestrak database, ALL or search_term=')
     parser.add_argument("tel_code", type=str,
                     help='tel_code: Code of the Las Cumbres Network facility to observe, e.g. lsc-doma-1m0a')
     parser.add_argument("date_start", type=str,
@@ -117,6 +126,21 @@ def get_args():
 
     return args
 
+def load_satcat(search_term = None):
+    satcat = []
+    with open('./satcat.csv', newline='') as csvfile:
+        reader = csv.reader(csvfile, delimiter=' ', quotechar='|')
+        for i,row in enumerate(reader):
+            if i==0:
+                keys = row[0].split(',')[1:]
+            else:
+                data = row[0].split(',')[0]
+                if data != 'OBJECT' and not search_term:
+                    satcat.append(data)
+                elif search_term in data:
+                    satcat.append(data)
+
+    return satcat
 
 if __name__ == '__main__':
     run()
