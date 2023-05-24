@@ -16,6 +16,7 @@ import numpy as np
 # Developer: R.A. Street
 class Telescope():
     def __init__(self):
+        self.tel_code = None
         self.site = None
         self.enclosure = None
         self.latitude = None
@@ -94,12 +95,38 @@ class Telescope():
 
             elif (sun_altitude <= -18.0*u.deg):
                 return False, 'Target not illuminated at night'
-                
+
             # If the site is in twilight and the target is above the horizon,
             # it is likely to be visible
             else:
                 return True, 'OK'
 
+    def get_times_twilight(self, date, time_format='JD'):
+        # Convert the date to a Time object, and create an array of timestamps
+        # throughout the 24hr period
+        if time_format == 'JD':
+            tstart = Time(date, format='jd')
+        else:
+            tstart = Time(date, format='isot', scale='utc')
+        dt = TimeDelta(1.0/24.0, format='jd')   # 1hr
+        ts = np.array([tstart+x*dt for x in range(0,24,1)])
+
+        # Calculate the location of the Sun throughout the 24hr period
+        # Annoyingly, get_sun doesn't seem to handle arrays of timestamps
+        frame = AltAz(location=self.earthlocation)
+        sun_altaz = []
+        for t in ts:
+            sun_position = get_sun(t).transform_to(frame)
+            sun_altaz.append(sun_position.alt.value)
+        sun_altaz = np.array(sun_altaz)
+
+        # Twilight periods occur when the Sun is above -18deg and less -12deg
+        # altitude relative to the local horizon
+        idx1 = np.where(sun_altaz >= -30.0)[0]
+        idx2 = np.where(sun_altaz <= -12.0)[0]
+        idx = list(set(idx1).intersection(set(idx2)))
+
+        return ts[idx]
 
 class LasCumbresNetwork():
     """Configure data on LCO Facilities.  Currently supports only imaging
@@ -148,6 +175,7 @@ class LasCumbresNetwork():
         self.telescopes = {}
         for tel_code, tel_data in facilities.items():
             tel = Telescope()
+            tel.tel_code = tel_code
             (tel.site, tel.enclosure, tel.tel) = tel_code.split('-')
             tel.latitude = tel_data[0]
             tel.longitude = tel_data[1]
@@ -163,6 +191,14 @@ class LasCumbresNetwork():
         else:
             raise IOError('Error: '+tel_code
                     +' is not a recognized facility in the Las Cumbres Network')
+
+    def get_aperture_class(self, search_term):
+        tel_list = []
+        for tel_code,tel in self.telescopes.items():
+            if search_term in tel_code:
+                tel_list.append(tel)
+
+        return tel_list
 
 class LasCumbresObservation():
 

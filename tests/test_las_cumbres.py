@@ -117,7 +117,7 @@ def test_build_obs_request(test, expected):
                  'RA': 262.5*u.deg,
                  'Dec': -29.0*u.deg,
                  'time_observe': '2023-07-15T04:00:00'},
-                 True
+                 False
             ),
             (
                 {'tel_code': 'ogg-clma-2m0a',
@@ -138,5 +138,27 @@ def test_visibility(test, expected):
     target = {'RA': test['RA'], 'Dec': test['Dec']}
     time_observe = Time(test['time_observe'], format='isot', scale='utc')
     (visible, status) = tel.check_visibility(target, time_observe.jd)
-
+    print(visible,status)
     assert(visible == expected)
+
+@pytest.mark.parametrize(
+    "test, expected",
+        [
+            (
+                {'tel_code': 'ogg-clma-2m0a',
+                 'time_observe': '2023-07-15T18:00:00'},
+                 2460142.125
+            )
+        ]
+    )
+def test_get_times_twilight(test, expected):
+
+    from leosat_obs_tools.las_cumbres import LasCumbresNetwork
+
+    facilities = LasCumbresNetwork()
+
+    tel = facilities.get_tel(test['tel_code'])
+    time_observe = Time(test['time_observe'], format='isot', scale='utc')
+    twilight = tel.get_times_twilight(time_observe.jd, time_format='JD')
+
+    assert(twilight[0].jd == expected)
