@@ -5,3 +5,6 @@ leosat_obs_tools.egg-info/PKG-INFO
 leosat_obs_tools.egg-info/SOURCES.txt
 leosat_obs_tools.egg-info/dependency_links.txt
 leosat_obs_tools.egg-info/top_level.txt
+tests/__init__.py
+tests/test_las_cumbres.py
+tests/test_sathub_ephem_utils.py

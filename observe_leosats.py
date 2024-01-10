@@ -66,11 +66,14 @@ def run():
                           'longitude': tel.longitude.deg,
                           'elevation': tel.elevation.value,
                           'jd': ts.jd}
+                print(params)
                 results = sathub_ephem_utils.query(params)
-
+                print(results)
+                
                 # Check for visibility
                 ntrails = 0
                 for entry in results:
+                    print(entry)
                     if not np.isnan(entry['RIGHT_ASCENSION-DEG']):
                         target = {'RA': entry['RIGHT_ASCENSION-DEG'],
                                   'Dec': entry['DECLINATION-DEG']}
@@ -125,7 +128,7 @@ def run():
                                     print(response)
                                 else:
                                     print('Status is '+args.submit+' so no observations submitted')
-                        
+
                         else:
                             entry['VISIBLE'] = tel.tel_code+':False'
                     else:

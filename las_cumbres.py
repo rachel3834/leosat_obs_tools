@@ -93,7 +93,7 @@ class Telescope():
             if (sun_altitude >= -12.0*u.deg):
                 return False, 'Target visible in daytime'
 
-            elif (sun_altitude <= -18.0*u.deg):
+            elif (sun_altitude <= -50.0*u.deg):
                 return False, 'Target not illuminated at night'
 
             # If the site is in twilight and the target is above the horizon,
@@ -122,7 +122,7 @@ class Telescope():
 
         # Twilight periods occur when the Sun is above -18deg and less -12deg
         # altitude relative to the local horizon
-        idx1 = np.where(sun_altaz >= -30.0)[0]
+        idx1 = np.where(sun_altaz >= -50.0)[0]
         idx2 = np.where(sun_altaz <= -12.0)[0]
         idx = list(set(idx1).intersection(set(idx2)))
 
