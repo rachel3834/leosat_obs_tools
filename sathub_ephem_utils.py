@@ -34,25 +34,62 @@ def query(params):
     results json    Dictionary of returned results
     """
 
-    ROOT_URL = 'http://apexgroup.web.illinois.edu/ephemeris/'
+    #ROOT_URL = 'http://apexgroup.web.illinois.edu/ephemeris/'
+    ROOT_URL = 'https://cps.iau.org/tools/satchecker/api/ephemeris/'
 
-    if 'jd' in params.keys():
-        query = path.join(ROOT_URL, 'name', params['name'],
-                            str(params['latitude']), str(params['longitude']),
-                            str(params['elevation']), str(params['jd']))
+    # Search for satellite by name endpoint
+    if params['api'] == 'name':
+        url = path.join(ROOT_URL, 'name')
+        query = {
+                    'name': params['name'],
+                    'latitude': params['latitude'],
+                    'longitude': params['longitude'],
+                    'elevation': params['elevation'],
+                    'julian_date': params['jd']
+                 }
 
-    elif 'jdstart'in params.keys() and 'jdstop' in params.keys() \
-            and 'jdstep' in params.keys():
-        query = path.join(ROOT_URL, 'namejdstep', params['name'],
-                            str(params['latitude']), str(params['longitude']),
-                            str(params['elevation']),
-                            str(params['jdstart']), str(params['jdstop']),
-                            str(params['jdstep']))
+    # Search by satellite name within a specified date range:
+    elif params['api'] == 'name-jdstep':
+        url = path.join(ROOT_URL, 'name-jdstep')
+        query = {
+            'name': params['name'],
+            'latitude': params['latitude'],
+            'longitude': params['longitude'],
+            'elevation': params['elevation'],
+            'startjd': params['start_jd'],
+            'stopjd': params['stop_jd'],
+            'stepjd': params['step_jd']
+        }
+
+    # Search by satellite catalog number:
+    elif params['api'] == 'catalog-number':
+        url = path.join(ROOT_URL, 'catalog-number')
+        query = {
+                    'catalog': params['catalog'],
+                    'latitude': params['latitude'],
+                    'longitude': params['longitude'],
+                    'elevation': params['elevation'],
+                    'jd': params['jd']
+        }
+
+    # Search for a satellite by catalog number within a specified date range:
+    elif params['api'] == 'catalog-number-jdstep':
+        url = path.join(ROOT_URL, 'catalog-number-jdstep')
+        query = {
+            'catalog': params['catalog'],
+            'latitude': params['latitude'],
+            'longitude': params['longitude'],
+            'elevation': params['elevation'],
+            'startjd': params['start_jd'],
+            'stopjd': params['stop_jd'],
+            'stepjd': params['step_jd']
+        }
 
     else:
-        raiseIOError('Incorrect parameter set provided for query')
+        raiseIOError('Unsupported API endpoint given: ' + params['api'])
 
-    results = requests.get(query)
+    results = requests.get(url, params=query)
+
     if results.status_code == 200:
         results = results.json()
 

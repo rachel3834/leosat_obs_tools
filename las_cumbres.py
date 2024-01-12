@@ -45,6 +45,8 @@ class Telescope():
             self.instrument_type = '2M0-SCICAM-SPECTRAL'
         elif 'kb' in self.imager:
             self.instrument_type = '0M4-SCICAM-SBIG'
+        elif 'sq' in self.imager:
+            self.instrument_type = '0M4-SCICAM-QHY600'
         else:
             raise IOError('Unrecognized instrument type, '+str(self.imager))
 
@@ -147,8 +149,8 @@ class LasCumbresNetwork():
         #tel_code : site_code: latitude, longitude, elevation
         facilities = {
             'ogg-clma-2m0a': [Angle('20d42m25.5sN'), Angle('156d15m27.4sW'), 3055.0*u.m, 'mc03'],
-            'ogg-clma-0m4b': [Angle('20d42m25.1sN'), Angle('156d15m27.11sW'), 3037.0*u.m, 'kb27'],
-            #'ogg-clma-0m4c': [Angle('20d42m25.1sN'), Angle('156d15m27.12sW'), 3037.0*u.m, ''],
+            'ogg-clma-0m4b': [Angle('20d42m25.1sN'), Angle('156d15m27.11sW'), 3037.0*u.m, 'sq30'],
+            'ogg-clma-0m4c': [Angle('20d42m25.1sN'), Angle('156d15m27.12sW'), 3037.0*u.m, 'sq40'],
             'coj-clma-2m0a': [Angle('31d16m23.4sS'), Angle('149d4m13.0sE'), 1111.8*u.m, 'fs01'],
             'coj-doma-1m0a': [Angle('31d16m22.56sS'), Angle('149d4m14.33sE'), 1168.0*u.m, 'fa12'],
             'coj-domb-1m0a': [Angle('31d16m22.89sS'), Angle('149d4m14.75sE'), 1168.0*u.m, 'fa19'],
@@ -299,6 +301,12 @@ class LasCumbresObservation():
             else:
                 raise ValueError('Unrecognized filter ('+f+') requested')
 
+        # Determine the default instrument config mode based on the instrument class
+        mode = 'default'
+        print('FACILITY: ',self.facility.imager)
+        if 'sq' in str(self.facility.imager).lower():
+            mode = 'full_frame'
+
         config_list = []
         for i in range(0,len(self.exposure_times),1):
             config = {
@@ -308,7 +316,7 @@ class LasCumbresObservation():
                         {
                             'exposure_count': int(self.exposure_counts[i]),
                             'exposure_time': float(self.exposure_times[i]),
-                            'mode': 'default',
+                            'mode': mode,
                             'rotator_mode': '',
                             "extra_params": {
                                 "defocus": 0,

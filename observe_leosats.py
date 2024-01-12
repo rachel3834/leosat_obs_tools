@@ -40,7 +40,6 @@ def run():
     # Resolve date range to search over
     ts_start = Time(args.date_start, format='isot', scale='utc')
     ts_stop = Time(args.date_stop, format='isot', scale='utc')
-    date_range = np.arange(ts_start.jd, ts_stop.jd, 1.0)
 
     # Load the user's LCO credentials:
     lco_info = las_cumbres.load_lco_info(args.lco_info)
@@ -51,33 +50,35 @@ def run():
 
     visible_results = []
 
+    # Query SatHub for all telescopes in the list
     for tel in tel_list:
-        twilight_times = np.array([])
-        for date in date_range:
-            ts = tel.get_times_twilight(date)
-            twilight_times = np.concatenate((twilight_times, ts))
 
+        # Query for each requested satellite by name
         for sat_code in satcat:
-            for ts in twilight_times:
-                ts_start = Time(args.date_start, format='isot', scale='utc')
-                ts_stop = Time(args.date_stop, format='isot', scale='utc')
-                params = {'name': sat_code,
-                          'latitude': tel.latitude.deg,
-                          'longitude': tel.longitude.deg,
-                          'elevation': tel.elevation.value,
-                          'jd': ts.jd}
-                print(params)
-                results = sathub_ephem_utils.query(params)
-                print(results)
-                
-                # Check for visibility
-                ntrails = 0
-                for entry in results:
+            params = {
+                'api': 'name-jdstep',
+                'name': sat_code,
+                'latitude': tel.latitude.deg,
+                'longitude': tel.longitude.deg,
+                'elevation': tel.elevation.value,
+                'start_jd': ts_start.jd,
+                'stop_jd': ts_stop.jd,
+                'step_jd': args.jdstep
+            }
+            results = sathub_ephem_utils.query(params)
+
+            # Check for visibility
+            ntrails = 0
+            for entry in results:
+                if entry['ILLUMINATED']:
                     print(entry)
                     if not np.isnan(entry['RIGHT_ASCENSION-DEG']):
                         target = {'RA': entry['RIGHT_ASCENSION-DEG'],
                                   'Dec': entry['DECLINATION-DEG']}
                         (visible, status) = tel.check_visibility(target, entry['JULIAN_DATE'])
+
+                        visible = True  ### REMOVE
+
                         if visible:
                             entry['VISIBLE'] = tel.tel_code+':True'
                             ntrails += 1
@@ -93,7 +94,7 @@ def run():
                                 dt = duration / 2.0
 
                                 # Take only the first entry, to avoid oversubmitting:
-                                ts_obs = Time(visible_results[0]['JULIAN_DATE'], format='jd', scale='utc')
+                                ts_obs = Time(entry['JULIAN_DATE'], format='jd', scale='utc')
                                 obs_start = ts_obs - dt
                                 obs_stop = ts_obs + dt
                                 obs_params = {
@@ -103,8 +104,8 @@ def run():
                                               "obs_type": "TIME_CRITICAL",
                                               "target_name": sat_code,
                                               "target_type": "ICRS",
-                                              "ra": visible_results[0]['RIGHT_ASCENSION-DEG'],
-                                              "dec": visible_results[0]['DECLINATION-DEG'],
+                                              "ra": entry['RIGHT_ASCENSION-DEG'],
+                                              "dec": entry['DECLINATION-DEG'],
                                               "max_airmass": 2.0,
                                               "min_lunar_distance": 10.0,
                                               "max_lunar_phase": 1.0,
@@ -133,16 +134,18 @@ def run():
                             entry['VISIBLE'] = tel.tel_code+':False'
                     else:
                         entry['VISIBLE'] = tel.tel_code+':False'
-                    visible_results.append(entry)
+                else:
+                    entry['VISIBLE'] = tel.tel_code+':False'
+                visible_results.append(entry)
 
-                    tout = Time(entry['JULIAN_DATE'], format='jd')
-                    log.write(entry['NAME']+' '+tout.isot+' RA='
-                            +str(entry['RIGHT_ASCENSION-DEG'])+' Dec='
-                            +str(entry['DECLINATION-DEG'])
-                            +str(entry['VISIBLE'])+'\n')
+                tout = Time(entry['JULIAN_DATE'], format='jd')
+                log.write(entry['NAME']+' '+tout.isot+' RA='
+                        +str(entry['RIGHT_ASCENSION-DEG'])+' Dec='
+                        +str(entry['DECLINATION-DEG'])
+                        +str(entry['VISIBLE'])+'\n')
 
-                print(str(ntrails)+' opportunities to observe '+sat_code+' from '
-                    +tel.tel_code+' on '+str(ts))
+            print(str(ntrails)+' opportunities to observe '+sat_code+' from '
+                +tel.tel_code)
 
     if len(visible_results) == 0:
         log.write('No observing windows within parameters given\n')

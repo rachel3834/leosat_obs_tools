@@ -3,26 +3,144 @@ import pytest
 @pytest.mark.parametrize(
     "test, expected",
     [
-        ({
-          'name': 'ISS',
-          'latitude': 40.1164,
-          'longitude': -88.2434,
-          'elevation': 5000.0,
-          'jd': 2459994.50000
-          },
-        [{'ALTITUDE-DEG': -37.68294655741, 'AZIMUTH-DEG': 85.89233866614, 'DECLINATION-DEG': -20.3919105093, 'JULIAN_DATE': 2459994.5, 'NAME': 'ISS', 'RANGE-KM': 9271.195095794683, 'RIGHT_ASCENSION-DEG': 182.70437174419}, {'ALTITUDE-DEG': -44.93472137038, 'AZIMUTH-DEG': 333.41195813355, 'DECLINATION-DEG': 1.61086675694, 'JULIAN_DATE': 2459994.6, 'NAME': 'ISS', 'RANGE-KM': 10363.748420977574, 'RIGHT_ASCENSION-DEG': 294.73025446893}, {'ALTITUDE-DEG': -57.2624074091, 'AZIMUTH-DEG': 201.64864058464, 'DECLINATION-DEG': -68.00075365749, 'JULIAN_DATE': 2459994.7, 'NAME': 'ISS', 'RANGE-KM': 11856.149817235195, 'RIGHT_ASCENSION-DEG': 344.24685907277}, {'ALTITUDE-DEG': 59.96175234524, 'AZIMUTH-DEG': 340.85181541072, 'DECLINATION-DEG': 66.94522824522, 'JULIAN_DATE': 2459994.8, 'NAME': 'ISS', 'RANGE-KM': 1128.359730420369, 'RIGHT_ASCENSION-DEG': 143.58384425468}, {'ALTITUDE-DEG': -54.37248519449, 'AZIMUTH-DEG': 69.59780040135, 'DECLINATION-DEG': -21.74444208462, 'JULIAN_DATE': 2459994.9, 'NAME': 'ISS', 'RANGE-KM': 11566.142017700591, 'RIGHT_ASCENSION-DEG': 348.56705328631}, {'ALTITUDE-DEG': -64.11487477473, 'AZIMUTH-DEG': 246.08585174663, 'DECLINATION-DEG': -45.63532291723, 'JULIAN_DATE': 2459995.0, 'NAME': 'ISS', 'RANGE-KM': 12550.508535355391, 'RIGHT_ASCENSION-DEG': 95.58228207426}, {'ALTITUDE-DEG': -6.84714358712, 'AZIMUTH-DEG': 336.17584438881, 'DECLINATION-DEG': 38.22924575469, 'JULIAN_DATE': 2459995.1, 'NAME': 'ISS', 'RANGE-KM': 4567.068445882226, 'RIGHT_ASCENSION-DEG': 127.32308873944}, {'ALTITUDE-DEG': -37.20357334251, 'AZIMUTH-DEG': 157.50280367116, 'DECLINATION-DEG': -72.34011972414, 'JULIAN_DATE': 2459995.2, 'NAME': 'ISS', 'RANGE-KM': 9177.623189250826, 'RIGHT_ASCENSION-DEG': 40.8855468061}, {'ALTITUDE-DEG': -66.66833610039, 'AZIMUTH-DEG': 39.50835106721, 'DECLINATION-DEG': -20.86245230715, 'JULIAN_DATE': 2459995.3, 'NAME': 'ISS', 'RANGE-KM': 12788.521301818577, 'RIGHT_ASCENSION-DEG': 153.30410658777}, {'ALTITUDE-DEG': -21.734278594, 'AZIMUTH-DEG': 306.39306730525, 'DECLINATION-DEG': 10.57317593928, 'JULIAN_DATE': 2459995.4, 'NAME': 'ISS', 'RANGE-KM': 6779.401249604943, 'RIGHT_ASCENSION-DEG': 254.5724716309}, {'ALTITUDE-DEG': -52.43047863819, 'AZIMUTH-DEG': 190.01005651406, 'DECLINATION-DEG': -75.89625480933, 'JULIAN_DATE': 2459995.5, 'NAME': 'ISS', 'RANGE-KM': 11292.00000326329, 'RIGHT_ASCENSION-DEG': 266.42461321154}]
+        (
+            {
+                'api': 'name',
+                'name': 'STARLINK-1600',
+                'latitude': 40.1106,
+                'longitude': -88.2073,
+                'elevation': 222,
+                'jd': 2460000.1
+            },
+            [{
+                "ALTITUDE-DEG": -83.92701127488,
+                "AZIMUTH-DEG": 74.23644169397,
+                "DDEC-DEG_PER_SEC": -0.02013597761,
+                "DECLINATION-DEG": -38.21698520948,
+                "DRA_COSDEC-DEG_PER_SEC": 0.0273538424,
+                "ILLUMINATED": 'true',
+                "JULIAN_DATE": 2460000.1,
+                "NAME": "STARLINK-1600",
+                "PHASE_ANGLE-DEG": 75.47849642996,
+                "RANGE-KM": 13236.231719560885,
+                "RANGE_RATE-KM_PER_SEC": 0.656362193304,
+                "RIGHT_ASCENSION-DEG": 94.32142232641,
+                "TLE-DATE": "2023-09-05 16:20:37"
+            }]
         ),
-        ({
-          'name': 'ISS',
-          'latitude': 40.1164,
-          'longitude': -88.2434,
-          'elevation': 5000.0,
-          'jdstart': 2459994.50000,
-          'jdstop': 2459995.50000,
-          'jdstep': 0.1
-          },
-          [{'ALTITUDE-DEG': -37.68294655741, 'AZIMUTH-DEG': 85.89233866614, 'DECLINATION-DEG': -20.3919105093, 'JULIAN_DATE': 2459994.5, 'NAME': 'ISS', 'RANGE-KM': 9271.195095794683, 'RIGHT_ASCENSION-DEG': 182.70437174419}, {'ALTITUDE-DEG': -44.93472137038, 'AZIMUTH-DEG': 333.41195813355, 'DECLINATION-DEG': 1.61086675694, 'JULIAN_DATE': 2459994.6, 'NAME': 'ISS', 'RANGE-KM': 10363.748420977574, 'RIGHT_ASCENSION-DEG': 294.73025446893}, {'ALTITUDE-DEG': -57.2624074091, 'AZIMUTH-DEG': 201.64864058464, 'DECLINATION-DEG': -68.00075365749, 'JULIAN_DATE': 2459994.7, 'NAME': 'ISS', 'RANGE-KM': 11856.149817235195, 'RIGHT_ASCENSION-DEG': 344.24685907277}, {'ALTITUDE-DEG': 59.96175234524, 'AZIMUTH-DEG': 340.85181541072, 'DECLINATION-DEG': 66.94522824522, 'JULIAN_DATE': 2459994.8, 'NAME': 'ISS', 'RANGE-KM': 1128.359730420369, 'RIGHT_ASCENSION-DEG': 143.58384425468}, {'ALTITUDE-DEG': -54.37248519449, 'AZIMUTH-DEG': 69.59780040135, 'DECLINATION-DEG': -21.74444208462, 'JULIAN_DATE': 2459994.9, 'NAME': 'ISS', 'RANGE-KM': 11566.142017700591, 'RIGHT_ASCENSION-DEG': 348.56705328631}, {'ALTITUDE-DEG': -64.11487477473, 'AZIMUTH-DEG': 246.08585174663, 'DECLINATION-DEG': -45.63532291723, 'JULIAN_DATE': 2459995.0, 'NAME': 'ISS', 'RANGE-KM': 12550.508535355391, 'RIGHT_ASCENSION-DEG': 95.58228207426}, {'ALTITUDE-DEG': -6.84714358712, 'AZIMUTH-DEG': 336.17584438881, 'DECLINATION-DEG': 38.22924575469, 'JULIAN_DATE': 2459995.1, 'NAME': 'ISS', 'RANGE-KM': 4567.068445882226, 'RIGHT_ASCENSION-DEG': 127.32308873944}, {'ALTITUDE-DEG': -37.20357334251, 'AZIMUTH-DEG': 157.50280367116, 'DECLINATION-DEG': -72.34011972414, 'JULIAN_DATE': 2459995.2, 'NAME': 'ISS', 'RANGE-KM': 9177.623189250826, 'RIGHT_ASCENSION-DEG': 40.8855468061}, {'ALTITUDE-DEG': -66.66833610039, 'AZIMUTH-DEG': 39.50835106721, 'DECLINATION-DEG': -20.86245230715, 'JULIAN_DATE': 2459995.3, 'NAME': 'ISS', 'RANGE-KM': 12788.521301818577, 'RIGHT_ASCENSION-DEG': 153.30410658777}, {'ALTITUDE-DEG': -21.734278594, 'AZIMUTH-DEG': 306.39306730525, 'DECLINATION-DEG': 10.57317593928, 'JULIAN_DATE': 2459995.4, 'NAME': 'ISS', 'RANGE-KM': 6779.401249604943, 'RIGHT_ASCENSION-DEG': 254.5724716309}, {'ALTITUDE-DEG': -52.43047863819, 'AZIMUTH-DEG': 190.01005651406, 'DECLINATION-DEG': -75.89625480933, 'JULIAN_DATE': 2459995.5, 'NAME': 'ISS', 'RANGE-KM': 11292.00000326329, 'RIGHT_ASCENSION-DEG': 266.42461321154}]
-          )
+        (
+                {
+                    'api': 'catalog-number',
+                    'catalog': '25544',
+                    'latitude': 40.1106,
+                    'longitude': -88.2073,
+                    'elevation': 222,
+                    'jd': 2460000.1
+                },
+            [{
+                    "ALTITUDE-DEG": -59.42992120557,
+                    "AZIMUTH-DEG": 288.04620638774,
+                    "DDEC-DEG_PER_SEC": 0.02460147584,
+                    "DECLINATION-DEG": -25.64785198072,
+                    "DRA_COSDEC-DEG_PER_SEC": 0.02499960249,
+                    "ILLUMINATED": 'true',
+                    "JULIAN_DATE": 2460000.1,
+                    "NAME": "ISS (ZARYA)",
+                    "PHASE_ANGLE-DEG": 41.69217956408,
+                    "RANGE-KM": 11477.324789805665,
+                    "RANGE_RATE-KM_PER_SEC": -3.431545486776,
+                    "RIGHT_ASCENSION-DEG": 134.21602941437,
+                    "TLE-DATE": "2023-09-05 16:21:29"
+            }]
+            ),
+        (
+                {
+                    'api': 'catalog-number-jdstep',
+                    'catalog': '25544',
+                    'latitude': 40.1106,
+                    'longitude': -88.2073,
+                    'elevation': 222,
+                    'start_jd': 2460000.1,
+                    'stop_jd': 2460000.3,
+                    'step_jd': 0.1
+                },
+            [
+            {
+                "ALTITUDE-DEG": -59.42992120557,
+                "AZIMUTH-DEG": 288.04620638774,
+                "DDEC-DEG_PER_SEC": 0.02460147584,
+                "DECLINATION-DEG": -25.64785198072,
+                "DRA_COSDEC-DEG_PER_SEC": 0.02499960249,
+                "ILLUMINATED": 'true',
+                "JULIAN_DATE": 2460000.1,
+                "NAME": "ISS (ZARYA)",
+                "PHASE_ANGLE-DEG": 41.69217956408,
+                "RANGE-KM": 11477.324789805665,
+                "RANGE_RATE-KM_PER_SEC": -3.431545486776,
+                "RIGHT_ASCENSION-DEG": 134.21602941437,
+                "TLE-DATE": "2023-09-05 16:21:29"
+            },
+            {
+                "ALTITUDE-DEG": -22.86735389391,
+                "AZIMUTH-DEG": 142.33553116822,
+                "DDEC-DEG_PER_SEC": -0.01420767889,
+                "DECLINATION-DEG": -54.03105192755,
+                "DRA_COSDEC-DEG_PER_SEC": 0.03650863588,
+                "ILLUMINATED": 'true',
+                "JULIAN_DATE": 2460000.2,
+                "NAME": "ISS (ZARYA)",
+                "PHASE_ANGLE-DEG": 118.54352293428,
+                "RANGE-KM": 5908.636912798003,
+                "RANGE_RATE-KM_PER_SEC": 6.290602878885,
+                "RIGHT_ASCENSION-DEG": 30.83552022903,
+                "TLE-DATE": "2023-09-05 16:21:29"
+            }
+            ]
+        ),
+        (
+                {
+                    'api': 'name-jdstep',
+                    'name': 'STARLINK-1600',
+                    'latitude': 40.1106,
+                    'longitude': -88.2073,
+                    'elevation': 222,
+                    'start_jd': 2460000.1,
+                    'stop_jd': 2460000.3,
+                    'step_jd': 0.1
+                },
+                [
+                    {
+                        "ALTITUDE-DEG": -83.92701127488,
+                        "AZIMUTH-DEG": 74.23644169397,
+                        "DDEC-DEG_PER_SEC": -0.02013597761,
+                        "DECLINATION-DEG": -38.21698520948,
+                        "DRA_COSDEC-DEG_PER_SEC": 0.0273538424,
+                        "ILLUMINATED": 'true',
+                        "JULIAN_DATE": 2460000.1,
+                        "NAME": "STARLINK-1600",
+                        "PHASE_ANGLE-DEG": 75.47849642996,
+                        "RANGE-KM": 13236.231719560885,
+                        "RANGE_RATE-KM_PER_SEC": 0.656362193304,
+                        "RIGHT_ASCENSION-DEG": 94.32142232641,
+                        "TLE-DATE": "2023-09-05 16:20:37"
+                    },
+                    {
+                        "ALTITUDE-DEG": -11.8036627367,
+                        "AZIMUTH-DEG": 282.38507272541,
+                        "DDEC-DEG_PER_SEC": 0.05433004435,
+                        "DECLINATION-DEG": 1.75807790636,
+                        "DRA_COSDEC-DEG_PER_SEC": 0.00760649602,
+                        "ILLUMINATED": 'true',
+                        "JULIAN_DATE": 2460000.2,
+                        "NAME": "STARLINK-1600",
+                        "PHASE_ANGLE-DEG": 53.73895247174,
+                        "RANGE-KM": 4328.449597815868,
+                        "RANGE_RATE-KM_PER_SEC": -6.016772535669,
+                        "RIGHT_ASCENSION-DEG": 210.80053185868,
+                        "TLE-DATE": "2023-09-05 16:20:37"
+                    }
+                ]
+        )
     ])
 def test_query(test, expected):
     """Test that a standard query to the SatHub Ephemeris service produces

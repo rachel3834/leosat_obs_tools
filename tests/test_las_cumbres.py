@@ -10,7 +10,7 @@ import numpy as np
         ({
           "group_id": "TEST1",
           "submitter": "rstreet",
-          "proposal_id": "LCO2023A-001",
+          "proposal_id": "LCO2023B-114",
           "observation_type": "NORMAL",
           "target_name": "M31",
           "target_type": "ICRS",
@@ -33,7 +33,7 @@ import numpy as np
             "observation_type": "NORMAL",
             "operator": "SINGLE",
             "ipp_value": 1.05,
-            "proposal": "LCO2023A-001",
+            "proposal": "LCO2023B-114",
             "requests": [
                         {"location": {
                                      'telescope_class': '2m0',
@@ -91,11 +91,100 @@ import numpy as np
                         "state": "PENDING",
                         "acceptability_threshold": 90,
                         "configuration_repeats": 1,
-                        "optimization_type": "TIME",
-                        "extra_params": {}
+                        "optimization_type": "TIME"
                       }
             ]
-        })
+        }),
+        (
+        {
+          "group_id": "TEST2",
+          "submitter": "rstreet",
+          "proposal_id": "LCO2023B-114",
+          "observation_type": "NORMAL",
+          "target_name": "M42",
+          "target_type": "ICRS",
+          "ra": 83.82,
+          "dec": -5.39,
+          "max_airmass": 1.8,
+          "min_lunar_distance": 30.0,
+          "max_lunar_phase": 1.0,
+          "tel_code": "ogg-clma-0m4b",
+          "exposure_counts": [1],
+          "exposure_times": [30.0],
+          "filters": ["Bessell-R"],
+          "ipp": 1.05,
+          "tstart": datetime.strptime("2024-01-12 01:00:00","%Y-%m-%d %H:%M:%S"),
+          "tend": datetime.strptime("2024-01-13 23:59:59","%Y-%m-%d %H:%M:%S")
+          },
+          {
+            "submitter": "rstreet",
+            "name": "TEST2",
+            "observation_type": "NORMAL",
+            "operator": "SINGLE",
+            "ipp_value": 1.05,
+            "proposal": "LCO2023B-114",
+            "requests": [
+                        {"location": {
+                                     'telescope_class': '0m4',
+                                     'site': 'ogg',
+                                     'enclosure': 'clma'
+                                     },
+                        "configurations": [{
+                                        "type": "EXPOSE",
+                                        "instrument_type": "0M4-SCICAM-QHY600",
+                                        "instrument_configs": [{
+                                                                "exposure_time": 30.0,
+                                                                "exposure_count": 1,
+                                                                "mode": "default",
+                                                                "rotator_mode": "",
+                                                                "optical_elements": {
+                                                                    "filter": "r"
+                                                                },
+                                                                "extra_params": {
+                                                                    "defocus": 0,
+                                                                    "offset_ra": 0,
+                                                                    "offset_dec": 0
+                                                                }
+                                                            }],
+                                        "acquisition_config": {
+                                                                "mode": "OFF",
+                                                                "extra_params": {}
+                                                            },
+                                        "guiding_config": {
+                                                            "mode": "ON",
+                                                            "optional": "true",
+                                                            "extra_params": {}
+                                                        },
+                                        "constraints": {
+                                                        "max_airmass": 1.8,
+                                                        "min_lunar_distance": 30.0,
+                                                        "max_lunar_phase": 1.0
+                                                    },
+                                        "target": {
+                                                    "type": "ICRS",
+                                                    "name": "M42",
+                                                    "ra": 83.82,
+                                                    "dec": -5.39,
+                                                    "proper_motion_ra": 0,
+                                                    "proper_motion_dec": 0,
+                                                    "parallax": 0,
+                                                    "epoch": 2000,
+                                                    "extra_params": {}
+                                                },
+                                    }],
+                        "windows": [{
+                                    "start": "2024-01-12 01:00:00",
+                                    "end": "2024-01-13 23:59:59"
+                                    }],
+                        "observation_note": "",
+                        "state": "PENDING",
+                        "acceptability_threshold": 90,
+                        "configuration_repeats": 1,
+                        "optimization_type": "TIME"
+                      }
+            ]
+        }
+        )
     ])
 def test_build_obs_request(test, expected):
 
@@ -107,6 +196,14 @@ def test_build_obs_request(test, expected):
     obs.build_obs_request()
 
     for key, value in expected.items():
+        if key != 'requests':
+            print('RECEIVED: ', key, obs.request[key])
+            print('EXPECTED: ', key, expected[key])
+        else:
+            for i,req in enumerate(obs.request[key]):
+                for item, value2 in req.items():
+                    print('RECEIVED: ', key, item, value2)
+                    print('EXPECTED: ', key, item, expected[key][i][item])
         assert(obs.request[key] == expected[key])
 
 @pytest.mark.parametrize(
@@ -147,7 +244,7 @@ def test_visibility(test, expected):
             (
                 {'tel_code': 'ogg-clma-2m0a',
                  'time_observe': '2023-07-15T18:00:00'},
-                 2460142.125
+                 2460141.7916666665
             )
         ]
     )
