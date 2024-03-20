@@ -45,7 +45,7 @@ def query(params):
                     'latitude': params['latitude'],
                     'longitude': params['longitude'],
                     'elevation': params['elevation'],
-                    'julian_date': params['jd']
+                    'julian_date': params['start_jd']
                  }
 
     # Search by satellite name within a specified date range:
@@ -65,18 +65,18 @@ def query(params):
     elif params['api'] == 'catalog-number':
         url = path.join(ROOT_URL, 'catalog-number')
         query = {
-                    'catalog': params['catalog'],
+                    'catalog': params['name'],
                     'latitude': params['latitude'],
                     'longitude': params['longitude'],
                     'elevation': params['elevation'],
-                    'jd': params['jd']
+                    'julian_date': params['start_jd']
         }
 
     # Search for a satellite by catalog number within a specified date range:
     elif params['api'] == 'catalog-number-jdstep':
         url = path.join(ROOT_URL, 'catalog-number-jdstep')
         query = {
-            'catalog': params['catalog'],
+            'catalog': params['name'],
             'latitude': params['latitude'],
             'longitude': params['longitude'],
             'elevation': params['elevation'],
@@ -87,6 +87,8 @@ def query(params):
 
     else:
         raiseIOError('Unsupported API endpoint given: ' + params['api'])
+
+    print('SATCHECKER: ' + url + ' ' + repr(query))
 
     results = requests.get(url, params=query)
 

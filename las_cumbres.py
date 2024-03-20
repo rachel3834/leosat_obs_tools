@@ -154,8 +154,8 @@ class LasCumbresNetwork():
             'coj-clma-2m0a': [Angle('31d16m23.4sS'), Angle('149d4m13.0sE'), 1111.8*u.m, 'fs01'],
             'coj-doma-1m0a': [Angle('31d16m22.56sS'), Angle('149d4m14.33sE'), 1168.0*u.m, 'fa12'],
             'coj-domb-1m0a': [Angle('31d16m22.89sS'), Angle('149d4m14.75sE'), 1168.0*u.m, 'fa19'],
-            'coj-clma-0m4a': [Angle('31d16m22.38sS'), Angle('149d4m15.05sE'), 1191.0*u.m, 'kb26'],
-            'coj-clma-0m4b': [Angle('31d16m22.48sS'), Angle('149d4m14.91sE'), 1191.0*u.m, 'kb83'],
+            'coj-clma-0m4a': [Angle('31d16m22.38sS'), Angle('149d4m15.05sE'), 1191.0*u.m, 'sq36'],
+            'coj-clma-0m4b': [Angle('31d16m22.48sS'), Angle('149d4m14.91sE'), 1191.0*u.m, 'sq37'],
             'elp-doma-1m0a': [Angle('30d40m47.53sN'), Angle('104d0m54.63sW'), 2010.0*u.m, 'fa05'],
             'elp-domb-1m0a': [Angle('30d40m48.00sN'), Angle('104d0m55.74sW'), 2029.4*u.m, 'fa07'],
             #'elp-aqwa-0m4a': [Angle('30d40,48.15sN'), Angle('104d0m54.24sW'), 2027.0*u.m, ''],
@@ -303,7 +303,6 @@ class LasCumbresObservation():
 
         # Determine the default instrument config mode based on the instrument class
         mode = 'default'
-        print('FACILITY: ',self.facility.imager)
         if 'sq' in str(self.facility.imager).lower():
             mode = 'full_frame'
 

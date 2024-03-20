@@ -11,10 +11,15 @@ import las_cumbres
 from astropy.time import Time, TimeDelta
 import csv
 import numpy as np
+import json
+from os import path, remove
+import logging
 
 def run():
     # Gather user input
     args = get_args()
+    log = start_log(args.data_dir)
+    log.info('Started run of observe_leosats')
 
     # Resolve list of satellites to search for
     if args.sat_code == 'ALL':
@@ -33,7 +38,7 @@ def run():
         tel_list = lco_network.get_aperture_class(search_term)
     else:
         tel_list = [lco_network.get_tel(args.tel_code)]
-    print('Checking for observing opportunities for '
+    log.info('Checking for observing opportunities for '
             +str(len(satcat))+' satellites from '
             +str(len(tel_list))+' telescope sites')
 
@@ -46,7 +51,7 @@ def run():
 
     # Query SatHub's ephemeris service for all requested satellites, for
     # all selected locations:
-    log = open('./visible_satellites.txt', 'w')
+    log2 = open(path.join(args.data_dir, 'visible_satellites.txt'), 'w')
 
     visible_results = []
 
@@ -56,7 +61,7 @@ def run():
         # Query for each requested satellite by name
         for sat_code in satcat:
             params = {
-                'api': 'name-jdstep',
+                'api': args.endpoint,
                 'name': sat_code,
                 'latitude': tel.latitude.deg,
                 'longitude': tel.longitude.deg,
@@ -70,33 +75,36 @@ def run():
             # Check for visibility
             ntrails = 0
             for entry in results:
-                if entry['ILLUMINATED']:
+                if 'Error' in str(entry):
                     print(entry)
+                    exit()
+
+                if entry['ILLUMINATED']:
+                    log.info('Satellite illuminated on ' + str(entry['JULIAN_DATE']))
                     if not np.isnan(entry['RIGHT_ASCENSION-DEG']):
                         target = {'RA': entry['RIGHT_ASCENSION-DEG'],
                                   'Dec': entry['DECLINATION-DEG']}
                         (visible, status) = tel.check_visibility(target, entry['JULIAN_DATE'])
 
-                        visible = True  ### REMOVE
-
                         if visible:
                             entry['VISIBLE'] = tel.tel_code+':True'
                             ntrails += 1
+                            log.info(entry)
 
                             # Compose observation requests for each entry, using a default strategy:
                             if args.submit == 'submit':
-                                nexp = 4
-                                overhead_per_exp = 28.0
+                                nexp = 11    # Must be an odd number
+                                overhead_per_exp = 4.0
                                 initial_overhead = 120.0
-                                expt = 5.0
+                                expt = 8.0
                                 bandpass = 'Bessell-V'
-                                duration = (initial_overhead + nexp*(expt + overhead_per_exp))/(60.0*60.0*24.0)
+                                duration = (nexp*(expt + overhead_per_exp))/(60.0*60.0*24.0)
                                 dt = duration / 2.0
 
                                 # Take only the first entry, to avoid oversubmitting:
                                 ts_obs = Time(entry['JULIAN_DATE'], format='jd', scale='utc')
-                                obs_start = ts_obs - dt
-                                obs_stop = ts_obs + dt
+                                obs_start = ts_obs - TimeDelta(dt, format='sec') - TimeDelta(initial_overhead, format='sec')
+                                obs_stop = obs_start + dt
                                 obs_params = {
                                               "group_id": sat_code.replace(' ','')+'_'+args.date_start,
                                               "submitter": lco_info['submitter'],
@@ -107,7 +115,7 @@ def run():
                                               "ra": entry['RIGHT_ASCENSION-DEG'],
                                               "dec": entry['DECLINATION-DEG'],
                                               "max_airmass": 2.0,
-                                              "min_lunar_distance": 10.0,
+                                              "min_lunar_distance": 20.0,
                                               "max_lunar_phase": 1.0,
                                               "tel_code": args.tel_code,
                                               "exposure_counts": [nexp],
@@ -120,18 +128,20 @@ def run():
 
                                 obs = las_cumbres.LasCumbresObservation(obs_params, lco_network)
                                 obs.build_obs_request()
-                                print('Observing request details: ')
-                                print(obs.request)
+                                log.info('Observing request details: ')
+                                log.info(obs.request)
 
                                 if args.submit == 'submit':
                                     response = las_cumbres.lco_api(obs.request, lco_info, 'requestgroups')
-                                    print('Submitted observation to LCO Network with response: ')
-                                    print(response)
-                                else:
-                                    print('Status is '+args.submit+' so no observations submitted')
+                                    log.info('Submitted observation to LCO Network with response: ')
+                                    log.info(response)
+                            else:
+                                log.info('Status is '+args.submit+' so no observations submitted')
 
                         else:
                             entry['VISIBLE'] = tel.tel_code+':False'
+                            log.info('Satellite not visible from site ' + args.tel_code)
+
                     else:
                         entry['VISIBLE'] = tel.tel_code+':False'
                 else:
@@ -139,17 +149,18 @@ def run():
                 visible_results.append(entry)
 
                 tout = Time(entry['JULIAN_DATE'], format='jd')
-                log.write(entry['NAME']+' '+tout.isot+' RA='
+                log2.write(entry['NAME']+' '+tout.isot+' RA='
                         +str(entry['RIGHT_ASCENSION-DEG'])+' Dec='
                         +str(entry['DECLINATION-DEG'])
                         +str(entry['VISIBLE'])+'\n')
 
-            print(str(ntrails)+' opportunities to observe '+sat_code+' from '
+            log.info(str(ntrails)+' opportunities to observe '+sat_code+' from '
                 +tel.tel_code)
 
     if len(visible_results) == 0:
         log.write('No observing windows within parameters given\n')
-    log.close()
+    log2.close()
+    close_log(log)
 
 def output_results_visibility(visible_results):
     """Function to output a concise and user-friendly summary of observing
@@ -170,6 +181,8 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('sat_code', type=str,
                     help='sat_code: Name of the satellite in the Celestrak database, ALL or search_term=')
+    parser.add_argument('endpoint', type=str,
+                        help='endpoint: SatChecker API to query, one of {name-jdstep, name, catalog-number-jdstep, catalog-number}')
     parser.add_argument("tel_code", type=str,
                     help='tel_code: Code of the Las Cumbres Network facility to observe, e.g. lsc-doma-1m0a or aperture_class=, e.g. aperture_class=0m4')
     parser.add_argument("date_start", type=str,
@@ -180,6 +193,8 @@ def get_args():
                     help='jdstep: Float number of day intervals to calculate positions for')
     parser.add_argument("lco_info", type=str,
                     help='lco_info: Path to file containing the users LCO token and proposal ID')
+    parser.add_argument("data_dir", type=str,
+                    help='data_dir: Path to output logfile')
     parser.add_argument("submit", type=str,
                     help='submit: Trigger to submit observations to LCO, either "nogo" or "submit"')
 
@@ -205,6 +220,83 @@ def load_satcat(search_term = None):
                     satcat.append(data)
 
     return satcat
+
+
+def start_log(log_dir, version=None):
+    """Function to initialize a log file for a single stage of pyDANDIA.
+
+    The naming convention for the file is [stage_name].log.
+
+    The new file will automatically overwrite any previously-existing logfile
+    for the given reduction.
+
+    This function also configures the log file to provide timestamps for
+    all entries.
+
+    Parameters:
+        log_dir   string        Directory path
+                                log_root_name  Name of the log file
+        stage_name  string      Name of the stage to be logged
+                                Used as both the log file name and the name
+                                of the logger Object
+        version   string        [optional] Stage code version string
+    Returns:
+        log       open logger object
+    """
+
+    # Console output not captured, though code remains for testing purposes
+    console = False
+    stage_name = 'obsleosat'
+
+    if path.isdir(log_dir) == False:
+        makedirs(log_dir)
+
+    log_file = path.join(log_dir, stage_name + '.log')
+    if path.isfile(log_file) == True:
+        remove(log_file)
+
+    # To capture the logging stream from the whole script, create
+    # a log instance together with a console handler.
+    # Set formatting as appropriate.
+    log = logging.getLogger(stage_name)
+
+    if len(log.handlers) == 0:
+        log.setLevel(logging.INFO)
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging.INFO)
+
+        if console == True:
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
+
+        formatter = logging.Formatter(fmt='%(asctime)s %(message)s', \
+                                      datefmt='%Y-%m-%dT%H:%M:%S')
+        file_handler.setFormatter(formatter)
+
+        if console == True:
+            console_handler.setFormatter(formatter)
+
+        log.addHandler(file_handler)
+        if console == True:
+            log.addHandler(console_handler)
+
+    log.info('Started run of ' + stage_name + '\n')
+    if version != None:
+        log.info('  Software version: ' + version + '\n')
+
+    return log
+def close_log(log):
+    """Function to cleanly shutdown logging functions with a final timestamped
+    entry.
+    Parameters:
+        log     logger Object
+    Returns:
+        None
+    """
+
+    log.info('Processing complete\n')
+    logging.shutdown()
+
 
 if __name__ == '__main__':
     run()
